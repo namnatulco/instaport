@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstaPort URL input</title>
+</head>
+<body>
+    <h1>Submit URL</h1>
+    <form id="form">
+  <label>copy URL here: <input id="url-input" /></label>
+  <br /><br />
+  <button type="submit">Submit form</button>
+</form>
+    <div id="result">
+        RESULT
+    </div>
+    <div>
+    <p id="log">log</p>
+    </div>
+    <script>
+async function getData(myurl) {
+  try {
+    const response = await fetch(myurl);
+    if (!response.ok) {
+      throw new Error(`Response status: ${response.status}`);
+    }
+
+    const json = await response.json();
+    result.textContent = JSON.stringify(json);
+
+  } catch (error) {
+    console.error(error.message);
+  }
+}
+
+    function logSubmit(event) {
+        log.textContent = `Form Submitted! Timestamp: ${event.timeStamp}`;
+
+        var url = document.getElementById("url-input").value;
+        const regex = new RegExp("(https.+/p/)([a-zA-Z0-9-]{11})(/.*)?");
+        var extractedUrl = regex.exec(url)[2];
+            
+        // Create a GET request to /fetch/ with the extracted URL
+        getData('/fetch/' + encodeURIComponent(extractedUrl));
+        // Prevent the form from submitting normally
+        event.preventDefault();
+    }
+
+    const form = document.getElementById("form");
+    const log = document.getElementById("log");
+    const result = document.getElementById("result");
+    form.addEventListener("submit", logSubmit);
+
+    </script>
+</body>
+</html>

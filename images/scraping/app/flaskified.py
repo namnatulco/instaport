@@ -1,9 +1,9 @@
-from flask import Flask
+from flask import Flask,redirect,url_for
 import json
 import scrape
 import re
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 
 @app.route('/fetch/<shortcode_unchecked>')
 def get_by_shortcode(shortcode_unchecked):
@@ -24,7 +24,7 @@ def get_by_shortcode(shortcode_unchecked):
 
 @app.route('/')
 def hello():
-	return "Hello World!"
+	return redirect(url_for('static', filename="main.html"))
 
 if __name__ == '__main__':
 	app.run(host='0.0.0.0', port=8000)
