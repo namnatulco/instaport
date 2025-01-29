@@ -15,22 +15,24 @@ import pickle
 contents = None
 fp = None
 try:
-    fp = open("/cache/" + shortcode, "rb", encoding="utf-8")
+    fp = open("/cache/" + shortcode, "rb")
     # open success -> read cache file
     # TODO avoid DoS due to huge files
     contents = pickle.load(fp)
     fp.close()
+    print("loaded from cache:",contents)
 except FileNotFoundError:
     try:
-        fp = open("/cache/" + shortcode, "w", encoding="utf-8")
+        fp = open("/cache/" + shortcode, "wb")
         import scrape
         # return instaloader post object - use for testing only!
-        post = scrape.do_scrape(shortcode)
-        pickle.dump(post, fp)
+        contents = scrape.do_scrape(shortcode)
+        pickle.dump(contents, fp)
         fp.close()
-    except OSError e:
+        print("wrote to cache",contents)
+    except OSError as e:
         print("Error while creating cache file", e)
-except OSError e:
+except OSError as e:
     print("Cache file exists but cannot be read, ", e)
 
 
