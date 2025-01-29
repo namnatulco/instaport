@@ -1,4 +1,4 @@
 # create volume if it doesnt already exist
 podman volume create jsoncache --ignore
 
-podman run --volume jsoncache:/cache --rm prod "$1"
+podman run --publish 8000:8000/tcp --detach --volume jsoncache:/cache prod

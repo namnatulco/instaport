@@ -18,4 +18,4 @@ FROM gcr.io/distroless/python3-debian12
 COPY --from=build-venv /venv /venv
 COPY ./app /app
 WORKDIR /app
-ENTRYPOINT ["/venv/bin/python3", "run_scraper.py"]
+ENTRYPOINT ["/venv/bin/python3", "flaskified.py"]
