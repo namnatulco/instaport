@@ -1,6 +1,7 @@
 from flask import Flask,redirect,url_for
 import json
 import scrape
+import interpret
 import re
 
 app = Flask(__name__, static_folder="static")
@@ -19,8 +20,11 @@ def get_by_shortcode(shortcode_unchecked):
     except:
         return "501 error fetching post"
 
-    # return a mostly unfiltered json dump as temporary dump
-    return json.dumps({"post-date":str(post.date), "post-author":str(post.owner_username), "post-title":str(post.title), "post-thumb":str(post.url), "caption":str(post.caption), "location":str(post.location)})
+    options = interpret.interpret_event_insta(post)
+    if options:
+        return str(options[0])
+    else:
+        return "501 interpretation error"
 
 @app.route('/')
 def hello():
