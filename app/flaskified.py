@@ -2,6 +2,7 @@ from flask import Flask,redirect,url_for
 import json
 import scrape
 import interpret
+import output
 import re
 
 app = Flask(__name__, static_folder="static")
@@ -22,7 +23,7 @@ def get_by_shortcode(shortcode_unchecked):
 
     options = interpret.interpret_event_insta(post)
     if options:
-        return str(options[0])
+        return [output.to_mastodon(i) for i in options] # let requester decide which is correct
     else:
         return "501 interpretation error"
 

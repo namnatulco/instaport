@@ -27,8 +27,13 @@ async function getData(myurl) {
     }
 
     const json = await response.json();
-    result.textContent = JSON.stringify(json);
-
+    json.forEach((element) => {
+        var newNode = document.createElement('p');
+        newNode.innerText = element;
+        result.appendChild(newNode);
+        var linebreak = document.createElement('br');
+        result.appendChild(linebreak);
+    });
   } catch (error) {
     console.error(error.message);
   }

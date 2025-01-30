@@ -31,7 +31,10 @@ def interpret_event_insta(post):
     possible_locations = []
     if post.location:
         possible_locations.append(str(post.location))
-    possible_locations.append(search_place(text))
+    possible_locations.extend(search_place(text))
+
+    if len(possible_locations) == 0:
+        possible_locations = ["Ort unbekannt"]
 
     event_type = spec.EventTypes.guess_event_type(text)
 
@@ -54,7 +57,7 @@ def interpret_event_insta(post):
     for eventdate in possible_dates:
         for loc in possible_locations:
             ev = spec.Event()
-            ev.date = eventdate #todo
+            ev.date = eventdate[1] # datetime object only
             ev.location = loc
             ev.event_type = event_type
             ev.event_name = event_name
