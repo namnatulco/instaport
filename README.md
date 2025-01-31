@@ -7,6 +7,7 @@ It may be extended to non-Instagram platforms at some point.
 ## Requirements
 
 - podman to build containers
+- podman compose to put the containers together
 - browser with javascript to interact with the UI
 
 ## Usage
@@ -20,13 +21,16 @@ Do not run anywhere near a prod- or internet-exposed environment.
 
 ### Building
 
-Browse to `images/scraping`.
+Create `.env.prod.app` and `.env.prod.db`. Nothing currently depends on them, but your compose will complain if they are missing.
 
-Run `./build.sh`, this creates a build container and a prod container.
+Run:
+
+`podman compose build`
 
 ### Running
 
-Run `./run.sh`, this creates a caching volume (if not already created), runs the prod container and attaches the volume.
+Run `podman compose up -d`.
+This creates a container associated with the webapp and a container associated with the database.
 
 Connect to [localhost:8000](http://localhost:8000), you will be redirected to a plain HTML page.
 

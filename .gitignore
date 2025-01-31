@@ -1,1 +1,3 @@
 images/scraping/app
+.env.prod.app
+.env.prod.db

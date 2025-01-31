@@ -16,6 +16,8 @@ RUN /venv/bin/pip install --disable-pip-version-check -r /requirements.txt
 # Copy the virtualenv into a distroless image
 FROM gcr.io/distroless/python3-debian12
 STOPSIGNAL SIGINT
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 COPY --from=build-venv /venv /venv
 COPY ./app /app
 WORKDIR /app

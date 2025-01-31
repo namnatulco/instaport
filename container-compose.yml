@@ -1,0 +1,41 @@
+services:
+  # TODO
+  #proxy:
+  #  image: nginx
+  #  networks:
+  #    - frontend
+  app: 
+    build: ./images/scraping
+    volumes:
+      - jsoncache:/cache
+    ports:
+      - 8000:8000/tcp
+    env_file: .env.prod.app
+    networks:
+      - frontend
+      - backend
+    depends:on:
+      - db
+
+  db:
+    image: docker.io/mongo:8.0.4-noble
+    restart: always
+    env_file: .env.prod.db
+    volumes:
+      - ./images/mongodb/conf:/etc/mongo
+      - vol-mongodb:/data/db
+    networks:
+      backend:
+        aliases:
+          - mongodb
+
+volumes:
+  jsoncache:
+  vol-mongodb:
+
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge

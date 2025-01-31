@@ -1,3 +1,3 @@
 cp -ru ../../app .
 
-podman build --tag prod --file ./Dockerfile
+podman build --tag instaport --file ./Dockerfile
