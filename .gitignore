@@ -1,2 +1,4 @@
 .env.prod.app
 .env.prod.db
+#ignore vim swap files
+*.swp
