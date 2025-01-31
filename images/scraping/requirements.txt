@@ -17,3 +17,5 @@ pytz==2024.2
 regex==2024.11.6
 six==1.17.0
 tzlocal==5.2
+dnspython==2.7.0
+pymongo==4.11

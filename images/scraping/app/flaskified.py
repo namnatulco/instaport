@@ -18,13 +18,15 @@ def get_by_shortcode(shortcode_unchecked):
     post = None
     try:
         post = scrape.cache_or_download(shortcode[0])
-    except:
+    except Exception as e:
+        print("parsing error", e)
         return "501 error fetching post"
 
     options = interpret.interpret_event_insta(post)
     if options:
         return [output.to_mastodon(i) for i in options] # let requester decide which is correct
     else:
+        print("interpretation error")
         return "501 interpretation error"
 
 @app.route('/')

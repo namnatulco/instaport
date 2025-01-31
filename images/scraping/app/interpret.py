@@ -23,15 +23,12 @@ def guess_event_title(text):
 # returns a list of possible spec.Event objects
 def interpret_event_insta(post):
     
-    text = str(post.caption)
+    text = post["caption"]
 
     # identify dates in the caption - will include time
     possible_dates = search_dates(text, languages=['de','en'])
 
-    possible_locations = []
-    if post.location:
-        possible_locations.append(str(post.location))
-    possible_locations.extend(search_place(text))
+    possible_locations = search_place(text)
 
     if len(possible_locations) == 0:
         possible_locations = ["Ort unbekannt"]
@@ -39,19 +36,22 @@ def interpret_event_insta(post):
     event_type = spec.EventTypes.guess_event_type(text)
 
     event_name = ""
-    if post.title:
-        event_name = str(post.title)
+
+    if post["title"]:
+        event_name = post["title"]
     else:
         event_name = guess_event_title(text)
 
     organizers = search_organizers(text)
-    post_author = str(post.owner_username)
+
+    post_author = post["owner_username"]
+
     if post_author:
         organizers.append(post_author) # assume author is organizer
     
-    image = post.url
+    image = post["url"]
 
-    post_URL = "https://www.instagram.com/p/" + str(post.shortcode) + "/"
+    post_URL = "https://www.instagram.com/p/" + post["shortcode"] + "/"
 
     possible_events = []
     for eventdate in possible_dates:
