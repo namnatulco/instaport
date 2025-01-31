@@ -4,6 +4,8 @@ import scrape
 import interpret
 import output
 import re
+import pymongo
+c = pymongo.MongoClient("mongodb://instaport_db_1:27017/") # TODO dont hardcode this
 
 app = Flask(__name__, static_folder="static")
 
@@ -24,7 +26,22 @@ def get_by_shortcode(shortcode_unchecked):
 
     options = interpret.interpret_event_insta(post)
     if options:
-        return [output.to_mastodon(i) for i in options] # let requester decide which is correct
+        for ev in options:
+            event_db_object = ev.to_db()
+            if not event_db_object["_id"]:
+                del event_db_object["_id"]
+            
+            # TODO optimize this by making it into a single query
+            in_db = c["instaport"]["event-options-db"].find_one(ev.get_search_pattern())
+            if not in_db:
+                event_db_object["_id"] = str(c["instaport"]["event-options-db"].insert_one(event_db_object).inserted_id)
+            else:
+                event_db_object["_id"] = str(in_db["_id"])
+
+            ev.identifier = event_db_object["_id"]
+
+        results = set(options) # use set to remove duplicates
+        return ["Option " + ev.identifier + " " + output.to_mastodon(ev) for ev in results]
     else:
         print("interpretation error")
         return "501 interpretation error"

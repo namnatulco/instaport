@@ -1,9 +1,9 @@
 import instaloader
 import json
 import pymongo
+c = pymongo.MongoClient("mongodb://instaport_db_1:27017/") # TODO dont hardcode this
 
 L = instaloader.Instaloader()
-c = pymongo.MongoClient("mongodb://instaport_db_1:27017/") # TODO dont hardcode this
 
 # scrape to json
 def do_scrape(shortcode):

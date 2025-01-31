@@ -20,6 +20,8 @@ class EventTypes(Enum):
 # the only purpose of this is to fix the json spec and handle it consistently
 # there are probably better ways to do this but this felt quickest
 class Event:
+    # identifier for the event - corresponds to objectid if stored in db
+    identifier = None
 
     # datetime object or string
     date = None
@@ -57,11 +59,12 @@ class Event:
 
     # dump the object to json - right now just a flat list
     def to_json(self):
-        return json.dumps({"date": str(self.date), "start_time": self.start_time, "location":self.location, "event_type" : self.event_type.name, "event_name": self.event_name,"organizers":self.organizers,"post_author":self.post_author, "post_URL":self.post_URL, "fulltext":self.fulltext, "mediaurls":self.mediaurls})
+        return json.dumps({"_id": self.identifier, "date": str(self.date), "start_time": self.start_time, "location":self.location, "event_type" : self.event_type.name, "event_name": self.event_name,"organizers":self.organizers,"post_author":self.post_author, "post_URL":self.post_URL, "fulltext":self.fulltext, "mediaurls":self.mediaurls})
 
     # from JSON to object, no validation
     def from_json(self, jsonblob):
         myjson = json.parse(jsonblob)
+        self.identifier = jsonblob._id
         self.date = myjson.date
         self.start_time = myjson.start_time
         self.location = myjson.location
@@ -73,5 +76,35 @@ class Event:
         self.fulltext = myjson.fulltext
         self.mediaurls = myjson.mediaurls
 
+    # dump the object to json - right now just a flat list
+    def to_db(self):
+        return {"_id": self.identifier, "date": self.date, "start_time": self.start_time, "location":self.location, "event_type" : self.event_type.name, "event_name": self.event_name,"organizers":self.organizers,"post_author":self.post_author, "post_URL":self.post_URL, "fulltext":self.fulltext, "mediaurls":self.mediaurls}
+
     def __str__(self):
         return self.to_json()
+
+    # returns a dict that defines the event as unique
+    # WARNING needs to be kept identical to __key!
+    # TODO right now this defines it using post URL as a factor
+    # this is not sustainable, but I'm not sure how else to do it
+    def get_search_pattern(self):
+        return {"date": self.date, "location":self.location, "event_type" : self.event_type.name, "post_author":self.post_author, "post_URL":self.post_URL}
+
+    # note: events with known IDs (self.identifier is set) are
+    # defined as different from events that do not have a known ID
+    # where relevant, use get_search_pattern to fetch the event from
+    # the db and set the ID
+    # yes this is horrible and messy
+    def __key(self):
+        if self.identifier:
+            return self.identifier
+        else:
+            return (self.date, self.location, self.event_type.name, self.post_author, self.post_URL)
+
+    def __hash__(self):
+        return hash(self.__key())
+
+    def __eq__(self, other):
+        if isinstance(other, Event):
+            return self.__key() == other.__key()
+        return NotImplemented

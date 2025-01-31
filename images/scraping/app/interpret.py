@@ -21,12 +21,12 @@ def guess_event_title(text):
 
 # interprets the instaloader post object, assumes wellformed input
 # returns a list of possible spec.Event objects
-def interpret_event_insta(post):
+def interpret_event_insta(post, languages=['de']):
     
     text = post["caption"]
 
     # identify dates in the caption - will include time
-    possible_dates = search_dates(text, languages=['de','en'])
+    possible_dates = search_dates(text, languages=languages)
 
     possible_locations = search_place(text)
 
@@ -66,6 +66,7 @@ def interpret_event_insta(post):
             ev.post_URL = post_URL
             ev.fulltext = text
             ev.mediaurls = [image]
+            ev.identifier = None # explicitly set None because not from db
             possible_events.append(ev)
 
     return possible_events
