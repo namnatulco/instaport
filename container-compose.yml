@@ -6,8 +6,6 @@ services:
   #    - frontend
   app: 
     build: ./images/scraping
-    volumes:
-      - jsoncache:/cache
     ports:
       - 8000:8000/tcp
     env_file: .env.prod.app
@@ -30,7 +28,6 @@ services:
           - mongodb
 
 volumes:
-  jsoncache:
   vol-mongodb:
 
 
