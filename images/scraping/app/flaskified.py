@@ -1,4 +1,4 @@
-from flask import Flask,redirect,url_for
+from flask import Flask,redirect,url_for,request,render_template
 import json
 import scrape
 import interpret
@@ -7,23 +7,15 @@ import re
 import pymongo
 mongo_db_connector = pymongo.MongoClient("mongodb://instaport_db_1:27017/") # TODO dont hardcode this
 
-app = Flask(__name__, static_folder="static")
+app = Flask(__name__, static_folder="static", template_folder="templates")
 
-@app.route('/fetch/<shortcode_unchecked>')
-def get_by_shortcode(shortcode_unchecked):
-    # TODO security checks
-
-    # URL validator (https.+/p/)([a-zA-Z0-9-]{11})(/.*)?  \2
-    shortcode = re.fullmatch(r'([a-zA-Z0-9-]{11})', shortcode_unchecked)
-    if not shortcode:
-        return "404 code not found"
+def get_by_shortcode(shortcode):
     post = None
     try:
         post = scrape.cache_or_download(shortcode[0])
     except Exception as e:
         print("parsing error", e)
-        return "501 error fetching post"
-
+        return None
     options = interpret.interpret_event_insta(post)
     if options:
         for ev in options:
@@ -41,10 +33,50 @@ def get_by_shortcode(shortcode_unchecked):
             ev.identifier = event_db_object["_id"]
 
         results = set(options) # use set to remove duplicates
-        return ["Option " + ev.identifier + " " + output.to_mastodon(ev) for ev in results]
+        return results
     else:
         print("interpretation error")
-        return "501 interpretation error"
+        return None
+
+
+@app.route('/select-insta/')
+def select_by_shortcode():
+    # TODO security checks
+
+    # URL validator (https.+/p/)([a-zA-Z0-9-]{11})(/.*)?  \2
+    targeturl = request.args.get("url-input", default = None, type = str)
+    if not targeturl:
+        return "400 missing or invalid argument"
+    shortcode_unchecked =  re.sub(r'(https.+/p/)([a-zA-Z0-9-]{11})(/.*)?', r"\2", targeturl)
+    if not shortcode_unchecked:
+        return "400 missing or invalid argument"
+    shortcode = re.fullmatch(r'([a-zA-Z0-9-]{11})', shortcode_unchecked)
+    if not shortcode:
+        return "404 invalid shortcode"
+
+    data = get_by_shortcode(shortcode)
+    if not data:
+        return "501 internal server error"
+
+    options = [{"identifier":ev.identifier, "text":output.to_mastodon(ev)} for ev in data]
+    return render_template('select-insta.html', options = options)
+
+@app.route('/fetch/<shortcode_unchecked>')
+def respond_fetch(shortcode_unchecked):
+    # TODO security checks
+
+    # URL validator (https.+/p/)([a-zA-Z0-9-]{11})(/.*)?  \2
+    shortcode = re.fullmatch(r'([a-zA-Z0-9-]{11})', shortcode_unchecked)
+    if not shortcode:
+        return "404 code not found"
+    data = get_by_shortcode(shortcode)
+    if not data:
+        return "501 internal server error"
+    return ["Option " + ev.identifier + " " + output.to_mastodon(ev) for ev in data]
+
+@app.route('/main2')
+def hello2():
+	return redirect(url_for('static', filename="main2.html"))
 
 @app.route('/')
 def hello():

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstaPort URL fetch</title>
+</head>
+<body>
+ <h1>select best representation</h1>
+ <form id="form">
+   <fieldset>
+    <legend>Which is the best representation of the selected post?</legend>
+    <div>
+      {% for option in options %}
+      <input type="radio" id="{{ option.identifier }}" name="{{ option.identifier }}" value=" {{ option.text }}" />
+      <label for="contactChoice1">{{ option.text }}</label>
+      <br/>
+      {% endfor %}
+    </div>
+    <div>
+      <button type="submit">Submit form (TODO)</button> 
+    </div>
+  </fieldset>
+</form>
+    </div>
+    <div>
+    <p id="log">log</p>
+    </div>
+</body>
+</html>
