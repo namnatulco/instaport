@@ -5,7 +5,7 @@ import interpret
 import output
 import re
 import pymongo
-c = pymongo.MongoClient("mongodb://instaport_db_1:27017/") # TODO dont hardcode this
+mongo_db_connector = pymongo.MongoClient("mongodb://instaport_db_1:27017/") # TODO dont hardcode this
 
 app = Flask(__name__, static_folder="static")
 
@@ -32,9 +32,9 @@ def get_by_shortcode(shortcode_unchecked):
                 del event_db_object["_id"]
             
             # TODO optimize this by making it into a single query
-            in_db = c["instaport"]["event-options-db"].find_one(ev.get_search_pattern())
+            in_db = mongo_db_connector["instaport"]["event-options-db"].find_one(ev.get_search_pattern())
             if not in_db:
-                event_db_object["_id"] = str(c["instaport"]["event-options-db"].insert_one(event_db_object).inserted_id)
+                event_db_object["_id"] = str(mongo_db_connector["instaport"]["event-options-db"].insert_one(event_db_object).inserted_id)
             else:
                 event_db_object["_id"] = str(in_db["_id"])
 

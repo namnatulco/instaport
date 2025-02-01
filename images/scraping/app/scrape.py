@@ -1,7 +1,7 @@
 import instaloader
 import json
 import pymongo
-c = pymongo.MongoClient("mongodb://instaport_db_1:27017/") # TODO dont hardcode this
+mongo_db_connector = pymongo.MongoClient("mongodb://instaport_db_1:27017/") # TODO dont hardcode this
 
 L = instaloader.Instaloader()
 
@@ -13,7 +13,7 @@ def do_scrape(shortcode):
     return post
 
 def cache_or_download(shortcode, force_download=False):
-    collection = c["instaport"]["insta-raw"]
+    collection = mongo_db_connector["instaport"]["insta-raw"]
     res = collection.find_one({"shortcode":shortcode})
 
     if not force_download and res:
