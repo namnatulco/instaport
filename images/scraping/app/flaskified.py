@@ -5,6 +5,7 @@ import interpret
 import output
 import re
 import pymongo
+from bson import ObjectId
 mongo_db_connector = pymongo.MongoClient("mongodb://instaport_db_1:27017/") # TODO dont hardcode this
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
@@ -37,6 +38,37 @@ def get_by_shortcode(shortcode):
     else:
         print("interpretation error")
         return None
+
+@app.route('/set-choice-insta/', methods=['POST']) 
+def set_by_objectid():
+
+    objectid = request.form.get("objectid", default = None, type = str)
+    feedback = request.form.get("feedback", default = None, type = str)
+
+    # valiate objectid
+    if not objectid or not type(objectid)==str:
+        print("invalid objectid",objectid)
+        return "fail"
+    if not re.fullmatch(r'[a-z0-9]{24}', objectid.lower()):
+        print("invalid objectid",objectid)
+        return "fail"
+
+    collection = mongo_db_connector["instaport"]["event-options-db"]
+    if feedback:
+        updatedict = {"$set": {"selected":True, "feedback":feedback}}
+    else:
+        updatedict = {"$set": {"selected":True}}
+    print("updating in db" + objectid)
+    oldobj = collection.find_one_and_update(
+            {"_id": ObjectId(objectid)},
+            updatedict
+            )
+    if not oldobj:
+        return "error, " + objectid + " not a valid object"
+    if not "selected" in oldobj:
+        return "success"
+    else:
+        return "was already selected"
 
 
 @app.route('/select-insta/')

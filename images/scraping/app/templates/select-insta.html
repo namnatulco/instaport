@@ -7,18 +7,21 @@
 </head>
 <body>
  <h1>select best representation</h1>
- <form id="form">
+ <form id="form" method="POST" action="/set-choice-insta/">
    <fieldset>
     <legend>Which is the best representation of the selected post?</legend>
     <div>
+      <input type="text" id="feedback" name="feedback"/>
+    </div>
+    <div>
       {% for option in options %}
-      <input type="radio" id="{{ option.identifier }}" name="{{ option.identifier }}" value=" {{ option.text }}" />
-      <label for="contactChoice1">{{ option.text }}</label>
+      <input type="radio" id="{{ option.identifier }}" name="objectid" value="{{ option.identifier }}" />
+      <label for="{{ option.identifier }}">{{ option.text }}</label>
       <br/>
       {% endfor %}
     </div>
     <div>
-      <button type="submit">Submit form (TODO)</button> 
+      <button type="submit">Submit form</button> 
     </div>
   </fieldset>
 </form>
