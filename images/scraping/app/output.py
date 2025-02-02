@@ -7,7 +7,7 @@ import os
 def to_mastodon(event, maxlen=500):
     if type(event) != spec.Event:
         print("Warning, may fail because to_mastodon expects spec.Event type!")
-    result = "{date}, {location}: {event_name} - {post_author} ( {post_URL} )".format(
+    result = "🗓️ {date}, 📍 {location}\nQuelle: {post_author} ( {post_URL} )\n{event_name}".format(
             date = str(event.date),
             location = event.location,
             event_name = event.event_name,
