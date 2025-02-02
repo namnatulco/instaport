@@ -9,18 +9,46 @@ from bson import ObjectId
 mongo_db_connector = pymongo.MongoClient("mongodb://instaport_db_1:27017/") # TODO dont hardcode this
 
 '''
-Retrieve from Instagram based on shortcode. This is the code that identifies the post in Instagram.
+Retrieve from Instagram based on shortcode. This is the code that identifies the post in Instagram. The function stores a dictionary of the post in the database (specifically in the instaport.insta-raw collection).
 
 Arguments:
     - shortcode (str): the shortcode to search for. This function assumes a valid and correct code.
+
+Returns:
+    - None, on failure
+    - a dictionary that represents the post associated with the instagram shortcode, retrieved from the database.
 '''
 def instagram_get_by_shortcode(shortcode):
+    #TODO implement force download
     post = None
-    try:
-        post = scrape.cache_or_download(shortcode)
-    except Exception as e:
-        logging.warning("failed while retrieving from instagram by shortcode",e)
-        return None
+    collection = mongo_db_connector["instaport"]["insta-raw"]
+    res = collection.find_one({"shortcode":shortcode})
+
+    if res:
+        post = res
+    else:
+        try:
+            post = scrape.instagram_download(shortcode)
+
+            # store obj in db 
+            logging.info("dbwrite", data_dict)
+            collection.insert_one(data_dict)
+        except Exception as e:
+            logging.warning("failed while retrieving from instagram by shortcode",e)
+            return None
+    return res
+
+'''
+given an instagram post, interpret it and return a list of possible events extracted from the post. Also caches these results in the database.
+
+Arguments:
+    - post (as a dictionary representation from the instaloader.insta-raw collection)
+
+Returns: 
+    - a set of options, each represented as an spec.Event object
+    - or None on failure
+'''
+def instagram_interpret_as_event(post):
     options = interpret.interpret_event_insta(post)
     if options:
         for ev in options:
@@ -44,25 +72,41 @@ def instagram_get_by_shortcode(shortcode):
         return None
 
 '''
-Convert the Instagram post containing an event identified by shortcode into a series of possible mastodon posts
+Convert the Instagram post containing an event identified by shortcode into a series of possible mastodon posts.
+
+Arguments:
+    - shortcode - str representation of the instagram shortcode of the post to be retrieved
+    - platform - str representation of the target platform **Warning, may be removed**
 '''
 def instagram_event_by_shortcode(shortcode, platform="Mastodon"):
     if platform != "Mastodon":
         logging.error("attempted to generate a post for a platform that is not yet implemented")
         return None
 
-    data = instagram_get_by_shortcode(shortcode)
+    post = instagram_get_by_shortcode(shortcode)
+    if not post:
+        logging.warning("no post object retrieved for",shortcode)
+        return None
+
+    data = instagram_interpret_as_event(post)
     if not data:
         return None
     else:
         return [{"identifier":ev.identifier, "text":output.to_mastodon(ev)} for ev in data]
 
 
-
 '''
 Update the database object associated with the passed objectid to indicate that the objectid is a valid representation and optionally feedback.
 
-This method assumes well-formed and sanitized input. It will return the old database object per mongodb convention, or None if no object was found.
+This method assumes well-formed and sanitized input.
+
+Arguments:
+    - objectid - str representation of the object ID in the instaport.event-options-db collection
+    - feedback (optional, None by default) - str representation of user feedback on this option
+
+Returns: 
+    - the old database object per mongodb convention
+    - or None if no object was found
 '''
 def update_event_by_objectid(objectid, feedback=None):
     collection = mongo_db_connector["instaport"]["event-options-db"]
