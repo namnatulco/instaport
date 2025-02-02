@@ -9,7 +9,7 @@ L = instaloader.Instaloader()
 def extract_shortcode(shortcode):
     res = re.fullmatch(r'([a-zA-Z0-9_-]{11})', shortcode)
     if res:
-        return res
+        return res[0]
     else:
         return None
 

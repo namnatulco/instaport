@@ -1,118 +1,97 @@
+# web server imports
 from flask import Flask,redirect,url_for,request,render_template
+from werkzeug.exceptions import BadRequest
+
+app = Flask(__name__, static_folder="static", template_folder="templates")
+
+# standard lib imports
 import urllib
 import json
-import spec
-import scrape
-import interpret
-import output
 import re
+import logging
+
+# database imports
 import pymongo
 from bson import ObjectId
 mongo_db_connector = pymongo.MongoClient("mongodb://instaport_db_1:27017/") # TODO dont hardcode this
 
-app = Flask(__name__, static_folder="static", template_folder="templates")
+# app imports
+import spec
+import scrape
+import interpret
+import output
+import instaport
 
-def get_by_shortcode(shortcode):
-    post = None
-    try:
-        post = scrape.cache_or_download(shortcode[0])
-    except Exception as e:
-        print("parsing error", e)
-        return None
-    options = interpret.interpret_event_insta(post)
-    if options:
-        for ev in options:
-            event_db_object = ev.to_db()
-            if not event_db_object["_id"]:
-                del event_db_object["_id"]
-            
-            # TODO optimize this by making it into a single query
-            in_db = mongo_db_connector["instaport"]["event-options-db"].find_one(ev.get_search_pattern())
-            if not in_db:
-                event_db_object["_id"] = str(mongo_db_connector["instaport"]["event-options-db"].insert_one(event_db_object).inserted_id)
-            else:
-                event_db_object["_id"] = str(in_db["_id"])
+@app.errorhandler(400)
+def bad_request(e):
+    return render_template('400.html', error_message=e), 400
 
-            ev.identifier = event_db_object["_id"]
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html', error_message=e), 404
 
-        results = set(options) # use set to remove duplicates
-        return results
-    else:
-        print("interpretation error")
-        return None
+@app.errorhandler(500)
+def server_error(e):
+    return render_template('500.html', error_message=e), 500
 
+'''
+accept and store that the given object is a "correct" representation and forward the user to mastodon for posting
+
+** Warning ** this will be deprecated soon
+'''
 @app.route('/set-choice-insta/', methods=['POST']) 
 def set_by_objectid():
-
     objectid = request.form.get("objectid", default = None, type = str)
     feedback = request.form.get("feedback", default = None, type = str)
 
     # valiate objectid
     if not objectid or not type(objectid)==str:
-        print("invalid objectid",objectid)
-        return "fail"
+        logging.warn("invalid objectid",objectid)
+        raise BadRequest("Invalid ObjectId")
+
     if not re.fullmatch(r'[a-z0-9]{24}', objectid.lower()):
-        print("invalid objectid",objectid)
-        return "fail"
+        logging.warn("malformed objectid",objectid)
+        raise BadRequest("Invalid ObjectId")
 
-    collection = mongo_db_connector["instaport"]["event-options-db"]
-    if feedback:
-        updatedict = {"$set": {"selected":True, "feedback":feedback}}
-    else:
-        updatedict = {"$set": {"selected":True}}
-    print("updating in db" + objectid)
-    oldobj = collection.find_one_and_update(
-            {"_id": ObjectId(objectid)},
-            updatedict
-            )
+    oldobj = instaport.update_event_by_objectid(objectid, feedback)
     if not oldobj:
-        return "error, " + objectid + " not a valid object"
-
-    if "selected" in oldobj:
-        return "was already selected"
-    
+        raise BadRequest("Invalid ObjectId")
     ev = spec.Event(dbobj=oldobj)
     if not ev:
-        return "sorry, invalid object, this means the item in the database is broken"
-    #return render_template('mastodon_publish.html', text=output.to_mastodon(ev))
-    return redirect("https://mastodon.social/share?text=" + urllib.parse.quote_plus(output.to_mastodon(ev)))
+        raise BadRequest("Could not convert document to Event")
+    text = output.to_mastodon(ev)
 
+    # redirect to mastodon URL
+    return redirect("https://mastodon.social/share?text=" + urllib.parse.quote_plus(text))
+
+'''
+This page expects to be given a url through GET.
+The shortcode is used as a unique identifier.
+If provided, it retrieves data from the database (possibly scraping beforehand if needed) and returns a list of interpretations.
+This is rendered in templates/select-insta.html. There, unauthenticated user can select their favorite interpretation and trigger a POST to store this along with notes.
+'''
 @app.route('/select-insta/')
-def select_by_shortcode():
-    # TODO security checks
-
-    # URL validator (https.+/p/)([a-zA-Z0-9-]{11})(/.*)?  \2
+def instagram_select_event_format():
     targeturl = request.args.get("url-input", default = None, type = str)
     if not targeturl:
-        return "400 missing or invalid argument"
+        logging.warning("invalid url " + targeturl)
+        raise BadRequest("Invalid URL")
+
     shortcode = scrape.extract_shortcode_insta_url(targeturl)
     if not shortcode:
-        return "404 invalid shortcode"
+        logging.warning("invalid shortcode " + shortcode)
+        raise BadRequest("Could not parse shortcode from URL")
 
-    data = get_by_shortcode(shortcode)
+    data = instaport.instagram_event_by_shortcode(shortcode, platform="Mastodon")
     if not data:
-        return "501 internal server error"
+        logging.warning("no valid data parsable")
+        raise BadRequest("Could not parse shortcode from URL")
 
-    options = [{"identifier":ev.identifier, "text":output.to_mastodon(ev)} for ev in data]
-    return render_template('select-insta.html', options = options)
+    return render_template('select-insta.html', options = data)
 
-@app.route('/fetch/<shortcode_unchecked>')
-def respond_fetch(shortcode_unchecked):
-    # TODO security checks
-
-    # URL validator (https.+/p/)([a-zA-Z0-9-]{11})(/.*)?  \2
-    shortcode = scrape.extract_shortcode(shortcode_unchecked)
-    if not shortcode:
-        return "404 code not found"
-    data = get_by_shortcode(shortcode)
-    if not data:
-        return "501 internal server error"
-    return ["Option " + ev.identifier + " " + output.to_mastodon(ev) for ev in data]
-
-@app.route('/main2')
-def hello2():
-	return redirect(url_for('static', filename="main2.html"))
-
+'''
+redirect to static HTML main page
+'''
 @app.route('/')
 def hello():
 	return redirect(url_for('static', filename="main.html"))
