@@ -1,9 +1,26 @@
 import instaloader
 import json
+import re
 import pymongo
 mongo_db_connector = pymongo.MongoClient("mongodb://instaport_db_1:27017/") # TODO dont hardcode this
 
 L = instaloader.Instaloader()
+
+def extract_shortcode(shortcode):
+    res = re.fullmatch(r'([a-zA-Z0-9_-]{11})', shortcode)
+    if res:
+        return res
+    else:
+        return None
+
+
+def extract_shortcode_insta_url(url):
+    res = re.sub(r'(https.+/p/)([a-zA-Z0-9_-]{11})(/.*)?', r"\2", url)
+    if not res:
+        return None
+    sc = extract_shortcode(res)
+    return sc
+
 
 # scrape to json
 def do_scrape(shortcode):

@@ -32,7 +32,7 @@ class Event:
     # string
     location = None
 
-    # spec.EventType
+    # spec.EventTypes
     event_type = None
 
     # string
@@ -53,11 +53,12 @@ class Event:
     # list[URL as string]
     mediaurls = []
 
-    # empty constructor
-    def __init__(self):
-        pass
+    def __init__(self, dbobj=None):
+        # import from DB -- assumes same format as to_db
+        if dbobj:
+            self.__from_db(dbobj)
+        # otherwise empty
 
-    # dump the object to json - right now just a flat list
     def to_json(self):
         return json.dumps({"_id": self.identifier, "date": str(self.date), "start_time": self.start_time, "location":self.location, "event_type" : self.event_type.name, "event_name": self.event_name,"organizers":self.organizers,"post_author":self.post_author, "post_URL":self.post_URL, "fulltext":self.fulltext, "mediaurls":self.mediaurls})
 
@@ -75,6 +76,24 @@ class Event:
         self.post_URL = myjson.post_URL
         self.fulltext = myjson.fulltext
         self.mediaurls = myjson.mediaurls
+
+    # dump the object to json - right now just a flat list
+    def __from_db(self, dbobj):
+        self.identifier = dbobj.get("_id", None)
+        self.date = dbobj.get("date", None)
+        self.start_time = dbobj.get("start_time", None)
+        self.location = dbobj.get("location", None)
+        event_type_name = dbobj.get("event_type", None)
+        if event_type_name in EventTypes.__members__:
+            self.event_type = EventTypes.__members__[event_type_name]
+        else: 
+            self.event_type = EventTypes.UNKNOWN
+        self.event_name = dbobj.get("event_name", None)
+        self.organizers = dbobj.get("organizers", [])
+        self.post_author = dbobj.get("post_author", None)
+        self.post_URL = dbobj.get("post_URL", None)
+        self.fulltext = dbobj.get("fulltext", None)
+        self.mediaurls = dbobj.get("mediaurls", [])
 
     # dump the object to json - right now just a flat list
     def to_db(self):

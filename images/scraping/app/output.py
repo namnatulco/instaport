@@ -5,6 +5,8 @@ import os
 # expects spec.Event
 # assumes wellformed input
 def to_mastodon(event, maxlen=500):
+    if type(event) != spec.Event:
+        print("Warning, may fail because to_mastodon expects spec.Event type!")
     result = "{date}, {location}: {event_name} - {post_author} ( {post_URL} )".format(
             date = str(event.date),
             location = event.location,

@@ -1,5 +1,7 @@
 from flask import Flask,redirect,url_for,request,render_template
+import urllib
 import json
+import spec
 import scrape
 import interpret
 import output
@@ -65,11 +67,15 @@ def set_by_objectid():
             )
     if not oldobj:
         return "error, " + objectid + " not a valid object"
-    if not "selected" in oldobj:
-        return "success"
-    else:
-        return "was already selected"
 
+    if "selected" in oldobj:
+        return "was already selected"
+    
+    ev = spec.Event(dbobj=oldobj)
+    if not ev:
+        return "sorry, invalid object, this means the item in the database is broken"
+    #return render_template('mastodon_publish.html', text=output.to_mastodon(ev))
+    return redirect("https://mastodon.social/share?text=" + urllib.parse.quote_plus(output.to_mastodon(ev)))
 
 @app.route('/select-insta/')
 def select_by_shortcode():
@@ -79,10 +85,7 @@ def select_by_shortcode():
     targeturl = request.args.get("url-input", default = None, type = str)
     if not targeturl:
         return "400 missing or invalid argument"
-    shortcode_unchecked =  re.sub(r'(https.+/p/)([a-zA-Z0-9-]{11})(/.*)?', r"\2", targeturl)
-    if not shortcode_unchecked:
-        return "400 missing or invalid argument"
-    shortcode = re.fullmatch(r'([a-zA-Z0-9-]{11})', shortcode_unchecked)
+    shortcode = scrape.extract_shortcode_insta_url(targeturl)
     if not shortcode:
         return "404 invalid shortcode"
 
@@ -98,7 +101,7 @@ def respond_fetch(shortcode_unchecked):
     # TODO security checks
 
     # URL validator (https.+/p/)([a-zA-Z0-9-]{11})(/.*)?  \2
-    shortcode = re.fullmatch(r'([a-zA-Z0-9-]{11})', shortcode_unchecked)
+    shortcode = scrape.extract_shortcode(shortcode_unchecked)
     if not shortcode:
         return "404 code not found"
     data = get_by_shortcode(shortcode)
