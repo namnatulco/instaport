@@ -31,8 +31,8 @@ def instagram_get_by_shortcode(shortcode):
             post = scrape.instagram_download(shortcode)
 
             # store obj in db 
-            logging.info("dbwrite", data_dict)
-            collection.insert_one(data_dict)
+            logging.info("dbwrite", post)
+            collection.insert_one(post)
         except Exception as e:
             logging.warning("failed while retrieving from instagram by shortcode",e)
             return None
@@ -85,7 +85,7 @@ def instagram_event_by_shortcode(shortcode, platform="Mastodon"):
 
     post = instagram_get_by_shortcode(shortcode)
     if not post:
-        logging.warning("no post object retrieved for",shortcode)
+        logging.warning("no post object retrieved for " + shortcode)
         return None
 
     data = instagram_interpret_as_event(post)
