@@ -12,6 +12,8 @@ RUN apt-get update && \
 FROM build AS build-venv
 COPY requirements.txt /requirements.txt
 RUN /venv/bin/pip install --disable-pip-version-check -r /requirements.txt
+COPY flair_setup.py
+RUN /venv/bin/python flair_setup.py
 
 # debug container
 FROM build-venv AS debug

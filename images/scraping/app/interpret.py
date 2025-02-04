@@ -6,6 +6,7 @@ import spec
 # this method implements various methods to search for place names
 # returns a list of strings
 def search_place(text):
+
     return []
 
 # this method implements various methods to search for organizers
